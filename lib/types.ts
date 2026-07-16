@@ -11,7 +11,7 @@ export interface Product {
   category: string;
   brand: string | null;
   imageUrl: string | null;
-  attributes: ProductAttributes;
+  attributes: ProductAttributes | null;
   stockQuantity: number;
   createdAt: Date;
   updatedAt: Date;
