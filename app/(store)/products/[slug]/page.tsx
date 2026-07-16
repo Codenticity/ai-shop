@@ -8,6 +8,9 @@ import { notFound } from "next/navigation";
 import { getProductBySlug, getAllProducts } from "@/lib/db/queries/products";
 import { AddToCartButton } from "@/components/store/add-to-cart-button";
 
+export const dynamic = "force-dynamic";
+
+
 export async function generateStaticParams() {
   const products = await getAllProducts(200);
   return products.map((p) => ({ slug: p.slug }));
