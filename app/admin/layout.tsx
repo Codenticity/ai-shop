@@ -1,10 +1,19 @@
 import Link from "next/link";
+import { auth } from "@/lib/auth/config";
+import { redirect } from "next/navigation";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+  const role = (session?.user as { role?: string } | undefined)?.role;
+
+  if (!session?.user || role !== "admin") {
+    redirect("/login");
+  }
+
   return (
     <div className="flex min-h-screen">
       <aside className="w-52 border-r border-zinc-200 bg-white px-4 py-8">
