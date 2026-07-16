@@ -6,7 +6,7 @@ import { generateRecommendation } from "@/lib/ai/recommend";
 import { db } from "@/lib/db";
 import { chatMessages } from "@/lib/db/schema";
 
-const GREETING_RESPONSES = [
+const GREETING_RESPONSES: string[] = [
   "Hi! I am your shopping assistant. Tell me what you are looking for — describe it in plain English and I will find the best match in our catalog.",
   "Hello! What can I help you find today? Describe what you need and I will search our catalog for you.",
   "Hey there! I am here to help you find the perfect product. What are you looking for?",
@@ -28,25 +28,22 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   const userId = session?.user?.id ?? null;
 
-  // Handle greetings without hitting the AI pipeline
   if (isGreeting(message)) {
-    const reply = GREETING_RESPONSES[Math.floor(Math.random() * GREETING_RESPONSES.length)];
+    const reply = GREETING_RESPONSES[Math.floor(Math.random() * GREETING_RESPONSES.length)] ?? GREETING_RESPONSES[0]!;
     await db.insert(chatMessages).values([
-      { userId, sessionId, role: "user", content: message },
-      { userId, sessionId, role: "assistant", content: reply, recommendedProductIds: [] },
+      { userId, sessionId, role: "user" as const, content: message },
+      { userId, sessionId, role: "assistant" as const, content: reply, recommendedProductIds: [] },
     ]);
     return NextResponse.json({ reply, products: [] });
   }
 
   const filters = await extractFilters(message);
-  console.log("Extracted filters:", JSON.stringify(filters));
 
-  // If searchQuery is empty after extraction, ask for clarification
   if (!filters.searchQuery || filters.searchQuery.trim() === "") {
     const reply = "Could you tell me more about what you are looking for? For example: a waterproof backpack under $100, or noise cancelling headphones.";
     await db.insert(chatMessages).values([
-      { userId, sessionId, role: "user", content: message },
-      { userId, sessionId, role: "assistant", content: reply, recommendedProductIds: [] },
+      { userId, sessionId, role: "user" as const, content: message },
+      { userId, sessionId, role: "assistant" as const, content: reply, recommendedProductIds: [] },
     ]);
     return NextResponse.json({ reply, products: [] });
   }
@@ -56,13 +53,12 @@ export async function POST(req: NextRequest) {
     { maxPriceCents: filters.maxPriceCents ?? undefined, category: filters.category ?? undefined },
     8
   );
-  console.log("Candidates found:", candidates.length);
 
   const { text, recommendedProductIds } = await generateRecommendation(message, candidates);
 
   await db.insert(chatMessages).values([
-    { userId, sessionId, role: "user", content: message },
-    { userId, sessionId, role: "assistant", content: text, recommendedProductIds },
+    { userId, sessionId, role: "user" as const, content: message },
+    { userId, sessionId, role: "assistant" as const, content: text, recommendedProductIds },
   ]);
 
   const recommendedProducts = candidates
