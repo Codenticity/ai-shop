@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { chatMessages } from "@/lib/db/schema";
 
 const GREETING_RESPONSES: string[] = [
-  "Hi! I am your shopping assistant. Tell me what you are looking for — describe it in plain English and I will find the best match in our catalog.",
+  "Hi! I am your shopping assistant. Tell me what you are looking for and I will find the best match in our catalog.",
   "Hello! What can I help you find today? Describe what you need and I will search our catalog for you.",
   "Hey there! I am here to help you find the perfect product. What are you looking for?",
 ];
@@ -29,10 +29,11 @@ export async function POST(req: NextRequest) {
   const userId = session?.user?.id ?? null;
 
   if (isGreeting(message)) {
-    const reply = GREETING_RESPONSES[Math.floor(Math.random() * GREETING_RESPONSES.length)] ?? GREETING_RESPONSES[0]!;
+    const idx = Math.floor(Math.random() * GREETING_RESPONSES.length);
+    const reply: string = GREETING_RESPONSES[idx] ?? GREETING_RESPONSES[0] ?? "Hi! How can I help you find a product today?";
     await db.insert(chatMessages).values([
-      { userId, sessionId, role: "user" as const, content: message },
-      { userId, sessionId, role: "assistant" as const, content: reply, recommendedProductIds: [] },
+      { userId, sessionId: sessionId as string, role: "user" as const, content: message },
+      { userId, sessionId: sessionId as string, role: "assistant" as const, content: reply, recommendedProductIds: [] },
     ]);
     return NextResponse.json({ reply, products: [] });
   }
@@ -40,10 +41,10 @@ export async function POST(req: NextRequest) {
   const filters = await extractFilters(message);
 
   if (!filters.searchQuery || filters.searchQuery.trim() === "") {
-    const reply = "Could you tell me more about what you are looking for? For example: a waterproof backpack under $100, or noise cancelling headphones.";
+    const reply: string = "Could you tell me more about what you are looking for? For example: a waterproof backpack under $100, or noise cancelling headphones.";
     await db.insert(chatMessages).values([
-      { userId, sessionId, role: "user" as const, content: message },
-      { userId, sessionId, role: "assistant" as const, content: reply, recommendedProductIds: [] },
+      { userId, sessionId: sessionId as string, role: "user" as const, content: message },
+      { userId, sessionId: sessionId as string, role: "assistant" as const, content: reply, recommendedProductIds: [] },
     ]);
     return NextResponse.json({ reply, products: [] });
   }
@@ -57,8 +58,8 @@ export async function POST(req: NextRequest) {
   const { text, recommendedProductIds } = await generateRecommendation(message, candidates);
 
   await db.insert(chatMessages).values([
-    { userId, sessionId, role: "user" as const, content: message },
-    { userId, sessionId, role: "assistant" as const, content: text, recommendedProductIds },
+    { userId, sessionId: sessionId as string, role: "user" as const, content: message },
+    { userId, sessionId: sessionId as string, role: "assistant" as const, content: text, recommendedProductIds },
   ]);
 
   const recommendedProducts = candidates
